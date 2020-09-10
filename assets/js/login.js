@@ -1,18 +1,17 @@
 $(function () {
-  $("#goRes").on("click", function () {
-    $(".layui-reg").show();
-    $(".layui-login").hide();
-  });
+  // 点击切换效果
   $("#goLogin").on("click", function () {
-    $(".layui-reg").hide();
-    $(".layui-login").show();
+    $(this).parents("form").hide();
+    $("#goReg").parents("form").show();
   });
-  // $("#btn_login").on("click", function (e) {
-  //   e.preventDefault();
-  // });
+  $("#goReg").on("click", function () {
+    $(this).parents("form").hide();
+    $("#goLogin").parents("form").show();
+  });
+  // 设置表单规则
 
   layui.form.verify({
-    /*    username: function (value, item) {
+    username: function (value, item) {
       //value：表单的值、item：表单的DOM对象
       if (!new RegExp("^[a-zA-Z0-9_\u4e00-\u9fa5\\s·]+$").test(value)) {
         return "用户名不能有特殊字符";
@@ -23,57 +22,89 @@ $(function () {
       if (/^\d+\d+\d$/.test(value)) {
         return "用户名不能全为数字";
       }
-    }, */
+    },
 
     //我们既支持上述函数式的方式，也支持下述数组的形式
     //数组的两个值分别代表：[正则匹配、匹配不符时的提示文字]
-    name: [/^[\S]{6,}$/, "用户名最少6位，且不能出现空格"],
     pass: [/^[\S]{6,12}$/, "密码必须6到12位，且不能出现空格"],
     repass: function (value, item) {
-      if ($(".layui-reg input[name = password]").val() !== value) {
-        // 两次密码不一样清空密码框
-        $(".layui-reg input[name = password]").val("");
-        $(".layui-reg input[name = repassword]").val("");
+      if ($(".reg-form input[name=password]").val() !== value) {
         return "两次密码不一样";
       }
     },
   });
-  // ajax 发送请求注册请求
-  $(".layui-reg").on("submit", function (e) {
+  // 注册事件
+  $(".reg-form").on("submit", function (e) {
     e.preventDefault();
-    var formdata = {
-      username: $(".layui-reg #username").val(),
-      password: $(".layui-reg #username").val(),
-    };
-    $.post("http://ajax.frontend.itheima.net/api/reguser", formdata, function (
-      res
-    ) {
-      // console.log(res);
+    // var data = new FormData($(".reg-form")[0]);
+    var data = $(this).serialize();
+    console.log(data);
+    $.post("/api/reguser", data, function (res) {
+      console.log(res);
+
       if (res.status === 0) {
-        layer.msg(res.message);
-        // window.location.href = "/index.html";
+        // layer.open({
+        //   // title: '在线调试'
+        //   content: res.message,
+        // });
+        layui.layer.msg(res.message);
+        // 表单重置
+        $(".reg-form")[0].reset();
+
+        // 注册成功后跳转到登录页面
+        $("#goLogin").click();
+
+        // return res.message;
       } else {
-        layer.msg(res.message);
+        layui.layer.msg(res.message);
+
+        // layer.open({
+        //   // title: '在线调试'
+        //   content: res.message,
+        // });
       }
     });
   });
-  // ajax 发送登录请求
-  $(".layui-login").on("submit", function (e) {
+  // 登录事件
+  $(".login-form").on("submit", function (e) {
     e.preventDefault();
-    var formdata = {
-      username: $(".layui-login input[name=title]").val(),
-      password: $(".layui-login input[name=password]").val(),
-    };
-    // console.log(formdata);
-    $.post("http://ajax.frontend.itheima.net/api/login", formdata, function (
-      res
-    ) {
-      // console.log(res);
-      if (res.status === 0) {
-        layer.msg(res.message);
-      } else {
-        layer.msg(res.message);
-      }
+    // var data = new FormData($("#myForm")[0]);
+    // var data = new FormData($(".login-form")[0]);
+    var data = $(this).serialize();
+    console.log(data);
+    $.ajax({
+      type: "post",
+      url: "/api/login",
+      data: data,
+      // processData: false,
+      // contentType: false,
+      success: function (res) {
+        // console.log(res);
+        if (res.status === 0) {
+          // alert(res.message);
+          layui.layer.open({
+            content: res.message,
+            yes: function (index, layero) {
+              //do something
+              // layer.close(index);
+              //如果设定了yes回调，需进行手工关闭
+              window.localStorage.setItem("token", res.token);
+              window.location.href = "../../index.html";
+            },
+          });
+        } else {
+          layui.layer.open({
+            content: res.message,
+            error: function (index, layero) {
+              //do something
+              // layer.close(index);
+              //如果设定了yes回调，需进行手工关闭
+              // window.localStorage.setItem("token", res.token);
+              // window.location.href = "../../index.html";
+            },
+          });
+        }
+      },
     });
   });
 });
